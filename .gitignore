@@ -2,24 +2,12 @@
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
-/src/.vs
 
-/src/MpcNET/bin
-/src/MpcNET/obj
-
-/src/MpcNET.Test/bin
-/src/MpcNET.Test/obj
-
-
-/src/MpcNET.sln.DotSettings.user
-/src/MpcNET.Test/MpcNET.Test.csproj.DotSettings
-/src/MpcNET/MpcNET.csproj.DotSettings
 /.vs
 *.user
-/Sources/.vs/MpcNET/v15
-/Sources/MpcNET/bin/Debug/netstandard2.0
-/Sources/MpcNET/obj
-/Sources/MpcNET.Test/obj
-/Sources/MpcNET/bin
-/Sources/MpcNET.Test/bin/Debug/netcoreapp2.0
-/Sources/.vs
+/Source/.vs/MpcNET/v15
+/Source/MpcNET/obj
+/Source/MpcNET.Test/obj
+/Source/MpcNET/bin
+/Source/MpcNET.Test/bin/
+/Source/.vs
