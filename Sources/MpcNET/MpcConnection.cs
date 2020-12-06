@@ -9,12 +9,10 @@ namespace MpcNET
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Linq;
     using System.Net;
     using System.Net.Sockets;
     using System.Text;
     using System.Threading.Tasks;
-    using MpcNET.Commands;
     using MpcNET.Exceptions;
     using MpcNET.Message;
     using Sundew.Base.ControlFlow;
@@ -42,6 +40,7 @@ namespace MpcNET
             this.mpcConnectionReporter = mpcConnectionReporter;
             this.ClearConnectionFields();
             this.server = server ?? throw new ArgumentNullException("Server IPEndPoint not set.", nameof(server));
+            this.mpcConnectionReporter?.SetSource(typeof(IMpcConnectionReporter), this);
         }
 
         /// <summary>
@@ -57,14 +56,14 @@ namespace MpcNET
         {
             if (this.tcpClient != null)
             {
-                var pingResult = await this.PingAsync();
+                var pingResult = await this.PingAsync().ConfigureAwait(false);
                 if (pingResult)
                 {
                     return;
                 }
             }
 
-            await this.ReconnectAsync(false);
+            await this.ReconnectAsync(false).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -88,7 +87,7 @@ namespace MpcNET
         {
             if (this.tcpClient == null)
             {
-                await this.ReconnectAsync(true);
+                await this.ReconnectAsync(true).ConfigureAwait(false);
             }
 
             if (mpcCommand == null)
@@ -107,12 +106,12 @@ namespace MpcNET
                 {
                     using (var writer = new StreamWriter(this.networkStream, Encoding, 512, true) { NewLine = "\n" })
                     {
-                        await writer.WriteLineAsync(commandText);
-                        await writer.FlushAsync();
+                        await writer.WriteLineAsync(commandText).ConfigureAwait(false);
+                        await writer.FlushAsync().ConfigureAwait(false);
                     }
 
-                    response = await this.ReadResponseAsync(commandText);
-                    if (response.Any())
+                    response = await this.ReadResponseAsync(commandText).ConfigureAwait(false);
+                    if (response.Count > 0)
                     {
                         lastException = null;
                         break;
@@ -124,7 +123,7 @@ namespace MpcNET
                 {
                     lastException = exception;
                     this.mpcConnectionReporter?.SendException(commandText, sendAttempter.CurrentAttempt, exception);
-                    await this.ReconnectAsync(true);
+                    await this.ReconnectAsync(true).ConfigureAwait(false);
                     this.mpcConnectionReporter?.RetrySend(commandText, sendAttempter.CurrentAttempt);
                 }
             }
@@ -133,10 +132,11 @@ namespace MpcNET
             {
                 try
                 {
-                    await this.DisconnectAsync(false);
+                    await this.DisconnectAsync(false).ConfigureAwait(false);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    lastException = new AggregateException(lastException, e);
                 }
 
                 return new ErrorMpdMessage<TResponse>(mpcCommand, new ErrorMpdResponse<TResponse>(lastException));
@@ -159,13 +159,13 @@ namespace MpcNET
             {
                 using (var writer = new StreamWriter(this.networkStream, Encoding, 512, true) { NewLine = "\n" })
                 {
-                    await writer.WriteLineAsync("ping");
-                    await writer.FlushAsync();
+                    await writer.WriteLineAsync("ping").ConfigureAwait(false);
+                    await writer.FlushAsync().ConfigureAwait(false);
                 }
 
                 using (var reader = new StreamReader(this.networkStream, Encoding, true, 512, true))
                 {
-                    var responseLine = await reader.ReadLineAsync();
+                    var responseLine = await reader.ReadLineAsync().ConfigureAwait(false);
                     return responseLine == "OK";
                 }
             }
@@ -181,10 +181,10 @@ namespace MpcNET
             while (connectAttempter.Attempt())
             {
                 this.mpcConnectionReporter?.Connecting(isReconnect, connectAttempter.CurrentAttempt);
-                await this.DisconnectAsync(false);
+                await this.DisconnectAsync(false).ConfigureAwait(false);
 
                 this.tcpClient = new TcpClient();
-                await this.tcpClient.ConnectAsync(this.server.Address, this.server.Port);
+                await this.tcpClient.ConnectAsync(this.server.Address, this.server.Port).ConfigureAwait(false);
                 if (this.tcpClient.Connected)
                 {
                     this.mpcConnectionReporter?.ConnectionAccepted(isReconnect, connectAttempter.CurrentAttempt);
@@ -195,10 +195,10 @@ namespace MpcNET
             this.networkStream = this.tcpClient.GetStream();
             using (var reader = new StreamReader(this.networkStream, Encoding, true, 512, true))
             {
-                var firstLine = await reader.ReadLineAsync();
+                var firstLine = await reader.ReadLineAsync().ConfigureAwait(false);
                 if (!firstLine.StartsWith(Constants.FirstLinePrefix))
                 {
-                    await this.DisconnectAsync(false);
+                    await this.DisconnectAsync(false).ConfigureAwait(false);
                     throw new MpcConnectException("Response of mpd does not start with \"" + Constants.FirstLinePrefix + "\".");
                 }
 
@@ -215,7 +215,7 @@ namespace MpcNET
                 string responseLine;
                 do
                 {
-                    responseLine = await reader.ReadLineAsync();
+                    responseLine = await reader.ReadLineAsync().ConfigureAwait(false);
                     this.mpcConnectionReporter.ReadResponse(responseLine, commandText);
                     if (responseLine == null)
                     {
