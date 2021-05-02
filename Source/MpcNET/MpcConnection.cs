@@ -15,7 +15,7 @@ namespace MpcNET
     using System.Threading.Tasks;
     using MpcNET.Exceptions;
     using MpcNET.Message;
-    using Sundew.Base.ControlFlow;
+    using Sundew.Base.Primitives.Computation;
 
     /// <summary>
     /// Keeps the connection to the MPD server and handels the most basic structure of the MPD protocol.
