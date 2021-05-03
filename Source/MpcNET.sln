@@ -5,7 +5,6 @@ VisualStudioVersion = 16.0.29324.140
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Utilities", "Solution Utilities", "{83D06F7C-1336-4AC3-82BB-FDE7940D3C10}"
 	ProjectSection(SolutionItems) = preProject
-		.travis.yml = .travis.yml
 		..\.github\workflows\dotnet.yml = ..\.github\workflows\dotnet.yml
 	EndProjectSection
 EndProject
